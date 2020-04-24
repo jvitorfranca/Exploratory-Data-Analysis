@@ -17,6 +17,26 @@ import pandas as pd
 from loguru import logger
 
 
+def correlation_plot(dataframe, method):
+
+    cor_data = (dataframe).corr(method=method).stack().reset_index().rename(
+        columns={0: 'correlation', 'level_0': 'variable', 'level_1': 'variable2'})
+
+    cor_data['correlation_label'] = cor_data['correlation'].map(
+        '{:.2f}'.format)
+
+    base = alt.Chart(cor_data, width=600, height=600).encode(
+        x='variable2:O', y='variable:O')
+
+    text = base.mark_text().encode(text='correlation_label', color=alt.condition(alt.datum.correlation > 0.5, alt.value('white'),
+                                                                                 alt.value('black')))
+
+    cor_plot = base.mark_rect().encode(
+        color='correlation:Q')
+
+    return cor_plot + text
+
+
 def main():
 
     st.title('Exploratory Data Analysis')
@@ -113,17 +133,38 @@ def main():
 
             st.table(dataframe[describe].describe())
 
+            # base = alt.Chart(dataframe)
+
+            # bar = base.mark_bar().encode(
+            #     x=alt.X(describe, bin=True, axis=None),
+            #     y='count()'
+            # )
+
+            # rule = base.mark_rule(color='red').encode(
+            #     x='mean({0})'.format(describe),
+            #     size=alt.value(5)
+            # )
+
+            # st.altair_chart(bar + rule, use_container_width=True)
+
+            sns.set()
+            sns.distplot(dataframe[describe])
+
+            st.pyplot()
+
+            st.markdown('The red line represents de mean of the data')
+
         st.subheader('Correlation')
 
         correlation = st.radio('Select the method :', ('Pearson', 'Spearman'))
 
         if correlation == 'Pearson':
 
-            st.dataframe(dataframe.corr(method='pearson'))
+            st.write(correlation_plot(dataframe, 'pearson'))
 
         else:
 
-            st.dataframe(dataframe.corr(method='spearman'))
+            st.write(correlation_plot(dataframe, 'spearman'))
 
 
 if __name__ == "__main__":
